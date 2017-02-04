@@ -59,7 +59,7 @@ public class SunshineSyncUtils {
      * writing out a bunch of multiplication ourselves and risk making a silly mistake.
      */
     private static final int SYNC_INTERVAL_HOURS = 3;
-    private static final int SYNC_INTERVAL_SECONDS = (int) TimeUnit.HOURS.toSeconds(SYNC_INTERVAL_HOURS);
+    private static final int SYNC_INTERVAL_SECONDS = 10;//(int) TimeUnit.HOURS.toSeconds(SYNC_INTERVAL_HOURS);
     private static final int SYNC_FLEXTIME_SECONDS = SYNC_INTERVAL_SECONDS / 3;
 
     private static boolean sInitialized;
@@ -132,39 +132,16 @@ public class SunshineSyncUtils {
      *                ContentResolver
      */
     synchronized public static void initialize(@NonNull final Context context) {
-        Log.d("TEST", "here");
 
         sGoogleApiClient = new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(@Nullable Bundle bundle) {
-                        Log.d("TEST", "onConnecteed");
+                        //Log.d("TEST", "onConnecteed");
                         sWearConnected = true;
 
-                        String[] projection = {
-                                WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
-                                WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
-                                WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
-                                WeatherContract.WeatherEntry.COLUMN_DATE
-                        };
-
-
-                        long normalizedUtcStartDay = SunshineDateUtils.getNormalizedUtcDateForToday();
-
-                        int dateIndex = 3;
-                        Cursor weatherCursor = context.getContentResolver().query(
-                                WeatherContract.WeatherEntry.CONTENT_URI,
-                                /* Columns; leaving this null returns every column in the table */
-                                projection,
-                                /* Optional specification for columns in the "where" clause above */
-                                projection[dateIndex] + " = ?",
-                                /* Values for "where" clause */
-                                new String[] {String.valueOf(normalizedUtcStartDay)},
-                                /* Sort order to return in Cursor */
-                                null);
-
-                        sendWeatherMessage(weatherCursor, context);
+                        sendWeatherMessage(context);
                     }
 
                     @Override
@@ -175,7 +152,7 @@ public class SunshineSyncUtils {
                 .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
                     @Override
                     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-                        Log.d("TEST","onConnectionFailed:"+connectionResult.getErrorCode()+","+connectionResult.getErrorMessage());
+                        //Log.d("TEST","onConnectionFailed:"+connectionResult.getErrorCode()+","+connectionResult.getErrorMessage());
 
                         sWearConnected = false;
                     }
@@ -256,7 +233,7 @@ public class SunshineSyncUtils {
         checkForEmpty.start();
     }
 
-    public static void sendWeatherMessage(final Cursor cursor, final Context context) {
+    public static void sendWeatherMessage(final Context context) {
 
         new AsyncTask<Void, Void, HashSet<String>>() {
 
@@ -276,8 +253,30 @@ public class SunshineSyncUtils {
 
             @Override
             protected void onPostExecute(HashSet<String> nodeIds) {
+                String[] projection = {
+                        WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
+                        WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
+                        WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
+                        WeatherContract.WeatherEntry.COLUMN_DATE
+                };
+
+
+                long normalizedUtcStartDay = SunshineDateUtils.getNormalizedUtcDateForToday();
+
+                int dateIndex = 3;
+                Cursor cursor = context.getContentResolver().query(
+                        WeatherContract.WeatherEntry.CONTENT_URI,
+                                /* Columns; leaving this null returns every column in the table */
+                        projection,
+                                /* Optional specification for columns in the "where" clause above */
+                        projection[dateIndex] + " = ?",
+                                /* Values for "where" clause */
+                        new String[] {String.valueOf(normalizedUtcStartDay)},
+                                /* Sort order to return in Cursor */
+                        null);
+
                 if (cursor.moveToFirst()) {
-                    Log.d("TEST", "cursor is good");
+                    //Log.d("TEST", "cursor is good");
                     // create comma separated values
                     // weatherId, temperature max, temperature low
                     int weatherIdIndex = cursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID);
@@ -297,22 +296,21 @@ public class SunshineSyncUtils {
                     byte[] message = messageString.getBytes();
 
                     for (String node: nodeIds) {
-                        Log.d("TEST", "Send Message");
                         Wearable.MessageApi.sendMessage(sGoogleApiClient, node, WEATHER_PATH, message)
                             .setResultCallback(new ResultCallback() {
 
                                 @Override
                                 public void onResult(@NonNull Result result) {
                                     if (!result.getStatus().isSuccess()) {
-                                        Log.d("HELLO", "Failed to send message");
+                                        //Log.d("TEST", "Failed to send message");
                                     } else {
-                                        Log.d("HELLO", "Success to send message");
+                                        //Log.d("TEST", "Successfully sent message");
                                     }
                                 }
                             });
                     }
                 } else {
-                    Log.d("TEST", "cursor is null");
+                    //Log.d("TEST", "cursor is null");
                 }
             }
         }.execute();

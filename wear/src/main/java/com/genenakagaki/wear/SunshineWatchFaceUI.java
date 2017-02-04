@@ -165,15 +165,17 @@ public class SunshineWatchFaceUI {
             // draw weather icon
             float y = mYOffset + mLineHeight * 3.8f;
             canvas.drawBitmap(weatherIcon, bounds.centerX() - size * 1.5f, y - mLineHeight * 1.5f, mWeatherIconPaint);
+
+            // Draw max and min temperature
+            float maxTempWidth = mMaxTempPaint.measureText(mMaxTempString);
+            x = bounds.centerX() - maxTempWidth / 2;
+            canvas.drawText(mMaxTempString, x, y, mMaxTempPaint);
+
+            x = bounds.centerX() + maxTempWidth / 2f;
+            canvas.drawText(mMinTempString, x, y, mMinTempPaint);
         }
 
-        // Draw max and min temperature
-        float maxTempWidth = mMaxTempPaint.measureText(mMaxTempString);
-        x = bounds.centerX() - maxTempWidth / 2;
-        canvas.drawText(mMaxTempString, x, y, mMaxTempPaint);
 
-        x = bounds.centerX() + maxTempWidth / 1.5f;
-        canvas.drawText(mMinTempString, x, y, mMinTempPaint);
     }
 
     public void setWeatherIconResourceId(int resourceId) {
